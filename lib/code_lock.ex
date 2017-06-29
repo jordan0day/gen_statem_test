@@ -10,6 +10,10 @@ defmodule CodeLock do
     :gen_statem.cast(__MODULE__, {:button, digit})
   end
 
+  def code_length() do
+    :gen_statem.call(__MODULE__, :code_length)
+  end
+
   # gen_statem callbacks
   def init(code) do
     do_lock()
@@ -36,6 +40,10 @@ defmodule CodeLock do
     end
   end
 
+  def locked(event_type, event_content, data) do
+    handle_event(event_type, event_content, data)
+  end
+
   def open(:state_timeout, :lock, data) do
     do_lock()
     {:next_state, :locked, data}
@@ -44,6 +52,10 @@ defmodule CodeLock do
   def open(:cast, {:button, _}, data) do
     # If they press a button while it's already unlocked, do nothing.
     {:next_state, :open, data}
+  end
+
+  def open(event_type, event_content, data) do
+    handle_event(event_type, event_content, data)
   end
 
   def terminate(_reason, state, _data) do
@@ -64,5 +76,9 @@ defmodule CodeLock do
 
   defp do_unlock() do
     IO.puts "Unlock"
+  end
+
+  defp handle_event({:call, from}, :code_length, %{code: code} = data) do
+    {:keep_state, data, [{:reply, from, length(code)}]}
   end
 end
